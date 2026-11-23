@@ -17,7 +17,7 @@
 | 渠道 | channel | 账号注册渠道（如官方/B 服），来自 binding_list 的 `channelName` |
 | 绑定列表 | `binding_list` | `binding-api-account-prod.hypergryph.com/account/binding/v1/binding_list` 接口及其响应，含 `bindingList[].roles[]` |
 | 浏览器登录 | browser login | 弹出浏览器窗口，用户登录客服中心，程序嗅探请求头捕获会话令牌组的流程 |
-| 粘贴 cookies 登录 | cookie-paste login | 用户从自己的浏览器复制 cookies 粘贴进来，程序注入后达到与浏览器登录等效的捕获方式（见 ADR-0003） |
+| 手动粘贴 token 登录 | manual token paste login | 用户从浏览器 DevTools Network 面板复制 `x-account-token` / `x-role-token` / `x-role-server-id` / binding token 四字段粘贴进表单，程序直接作为令牌组落库，不经浏览器会话（见 ADR-0014） |
 
 ## 资源与流水
 

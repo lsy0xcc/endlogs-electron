@@ -7,9 +7,9 @@ Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体�
 ```
 ┌───────────────────────────── 主进程 (main) ─────────────────────────────┐
 │                                                                          │
-│  auth/          登录捕获：BrowserWindow 弹窗 + 隐藏窗口 cookies 注入      │
-│    LoginService      统一的令牌捕获管线（请求头嗅探）                       │
-│    CookieImporter    粘贴 cookies 解析 → 注入 → 复用捕获管线              │
+│  auth/          登录入口：BrowserWindow 弹窗嗅探 + 手动 token 粘贴        │
+│    LoginService      浏览器登录的令牌捕获管线（请求头嗅探，ADR-0003）       │
+│    ManualTokenForm   手动 4 字段 token 表单校验 → 直接落库（ADR-0014）      │
 │  upstream/      上游 API 客户端（唯一出口，见 upstream-api.md）            │
 │    CurrencyLogClient seqId 分页拉取（遇到已获取旧数据即停，见同步进度）      │
 │    BindingClient     binding_list 拉取                                   │
@@ -34,7 +34,7 @@ Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体�
 
 1. **上游请求只在主进程**。上游要求 `origin`/`referer` 与客服中心一致并携带 `x-`* 令牌头，渲染进程直连既有 CORS 也泄露凭证。
 2. **令牌零散落**。捕获 → `TokenStore`（明文存 SQLite，ADR-0011）→ 内存供 `upstream/` 使用；渲染进程永远拿不到令牌。
-3. **登录捕获管线复用**。浏览器登录与粘贴 cookies 登录走同一条「注入会话 → 页面发请求 → 嗅探 `x-`* 头」管线，天然等效（ADR-0003）。
+3. **两条登录入口，一种令牌组**。浏览器登录走「弹窗 → 页面发请求 → 嗅探 `x-`* 头」管线（ADR-0003）；手动粘贴 token 直接落库、不经浏览器（ADR-0014）。两者产出的 `SessionTokens` 同构，下游无差别。
 4. **展示只读流水库**。渲染进程查询的是本地 SQLite（经 IPC），拉取动作只是同步流水库的手段。
 
 ## IPC 面（主 → 渲染暴露的能力，实现时以 zod schema 固化）
@@ -42,7 +42,7 @@ Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体�
 | 通道（暂名） | 方向 | 语义 |
 |--------------|------|------|
 | `auth:loginBrowser` | invoke | 打开登录窗口，返回捕获结果（或轮询 `auth:loginStatus`） |
-| `auth:loginCookies` | invoke | 传入粘贴的 cookies 文本，等效登录 |
+| `auth:loginTokens` | invoke | 传入手动粘贴的 4 字段 token，校验后直接落库（ADR-0014） |
 | `auth:refreshProfile` | invoke | 用 binding_token 刷新角色资料 |
 | `accounts:list` / `switch` / `delete` | invoke | 多账号管理 |
 | `sync:run` | invoke | 拉取（日期范围 × 币种），入参出参含进度 |
