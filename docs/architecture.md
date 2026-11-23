@@ -24,7 +24,7 @@ Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体�
 └──────────────────────────────────┬───────────────────────────────────────┘
                                    │ contextBridge（白名单 API）
 ┌──────────────────────────── 渲染进程 (renderer) ─────────────────────────┐
-│  React + shadcn/ui（Radix + Tailwind）                                       │
+│  React + shadcn/ui（Base UI + Tailwind v4，ADR-0016）                        │
 │  页面：主页（账号下拉 / 拉取 / 展示 / CSV 导出）/                              │
 │        设置页（lookback / CSV 导入导出 / 用户管理 / 码表）（见 ui.md）         │
 │  纯展示与状态，不直连上游、不落盘                                           │
