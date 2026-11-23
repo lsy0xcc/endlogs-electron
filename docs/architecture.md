@@ -19,13 +19,14 @@ Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体�
 │    TokenStore        令牌组读写唯一入口（明文存 SQLite，ADR-0011）          │
 │  ledger/        流水服务                                                  │
 │    SyncService       拉取（增量至 T / 全量，T 早停，ADR-0015）+ upsert + 进度事件 │
-│    ImportExport      CSV 导入导出（见 csv-format.md）                      │
+│    ImportExport      CSV 导入导出（papaparse，见 csv-format.md）              │
 │  ipc/           IPC 契约层（handlers 注册，见下）                          │
 └──────────────────────────────────┬───────────────────────────────────────┘
                                    │ contextBridge（白名单 API）
 ┌──────────────────────────── 渲染进程 (renderer) ─────────────────────────┐
 │  React + shadcn/ui（Radix + Tailwind）                                       │
-│  页面：账号管理 / 登录 / 拉取（进度条）/ 流水展示（待定，见 ui.md）           │
+│  页面：主页（账号下拉 / 拉取 / 展示 / CSV 导出）/                              │
+│        设置页（lookback / CSV 导入导出 / 用户管理 / 码表）（见 ui.md）         │
 │  纯展示与状态，不直连上游、不落盘                                           │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
@@ -44,13 +45,13 @@ Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体�
 | `auth:loginBrowser` | invoke | 打开登录窗口，返回捕获结果（或轮询 `auth:loginStatus`） |
 | `auth:loginTokens` | invoke | 传入手动粘贴的 4 字段 token，校验后直接落库（ADR-0014） |
 | `auth:refreshProfile` | invoke | 用 binding_token 刷新角色资料 |
-| `accounts:list` / `switch` / `delete` | invoke | 多账号管理 |
+| `accounts:list` / `switch` / `archive` / `restore` / `updateTokens` | invoke | 多账号管理（删除 = 归档软删除，编辑 = 更新 token；重复 roleId 合并/恢复语义见 ui.md、data-model.md） |
 | `sync:run` | invoke | 拉取（模式：同步数据（增量至 T）/ 获取全部，各 × 币种；ADR-0015），入参出参含进度 |
 | `sync:progress` | event | 进度事件（比例 0–1 + 阶段文案 + 缺口通知） |
 | `ledger:query` | invoke | 查询当前账号流水/汇总（展示层过滤 changeType） |
-| `csv:export` / `csv:import` | invoke | 导出保存对话框 / 导入解析 + 预检（条数、冲突） |
-| `reasons:status` | invoke | 码表版本与来源（诊断用） |
-| `settings:get` / `settings:set` | invoke | 读/写设置（`maxLookbackDays` 等，R7；含检测值变化时「推荐获取全部」提示的返回） |
+| `csv:export` / `csv:import` | invoke | 导出保存对话框 / 导入解析 + 预检（条数、冲突；papaparse，ADR-0013） |
+| `reasons:status` / `reasons:sync` | invoke | 码表版本与来源（诊断用）/ 手动触发码表同步（设置页按钮，ADR-0006 修订） |
+| `settings:get` | invoke | 读设置（`maxLookbackDays` 只读展示，R7；含检测值变化时「推荐获取全部」提示的返回） |
 
 ## 错误处理
 

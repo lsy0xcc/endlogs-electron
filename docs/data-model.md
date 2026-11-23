@@ -15,6 +15,7 @@ CREATE TABLE accounts (
   server_id       TEXT,
   server_name     TEXT,
   level           INTEGER,
+  status          TEXT NOT NULL DEFAULT 'active',  -- active / archived（软删除，见 ui.md「归档语义」）
   created_at     INTEGER NOT NULL,   -- unix 秒
   updated_at     INTEGER NOT NULL
 );
@@ -86,7 +87,7 @@ CREATE TABLE sync_state (
 
 - 上游边界的**事实**由 `hasNext=false` 给出；本地设置 `maxLookbackDays`（默认 90）是预测值，**不限制任何拉取行为**，仅用于进度条分母与「推荐获取全部历史数据」提示的触发
 - 预测值可从官方游戏日志页 HTML 文案解析（2026-11-23 发现）；实现暂以 TBD 存根（异步函数恒返回 90），落地后作为设置的默认值与自动检测来源
-- 用户手动修改设置，或检测值与上次不同 → 提示「推荐获取全部历史数据」；拒绝则按增量同步继续
+- 设置页**只读展示**检测值（用户不可手动修改）；检测值与上次不同 → 提示「推荐获取全部历史数据」；拒绝则按增量同步继续
 
 ## 汇总计算（展示层，纯查询）
 
@@ -99,4 +100,6 @@ CREATE TABLE sync_state (
 ## 已知边界情况
 
 - 同一鹰角账号换绑角色后重新登录：视为新账号实体（uid 不同则不同账号）；`account_uid` 相同可提示用户合并/替换
-- CSV 导入的时间列：带时区偏移的按偏移解析，老格式按用户选择时区（默认 Asia/Shanghai，旧项目导出口径）解析为 unix 秒（ADR-0012）；解析失败的行整行拒绝并报告
+- **删除账号 = 归档**（软删除）：`status='archived'`，不触发级联删除，流水与 `sync_state` 原样保留、导出可用；恢复 = `status='active'`（见 ui.md「归档语义」）
+- **重复 roleId**：添加账号时 token 解析出的 roleId 与已有账号相同 → 确认后**合并为刷新 token**（覆盖 `account_tokens`，不新建实体，流水不动）；与已归档账号相同 → 确认后**恢复 + 刷新 token**
+- CSV 导入的时间列：本项目导出（11 列 camelCase）只解析 `isoTime`（UTC，`Z` 结尾）为 unix 秒；老格式按用户选择时区（默认 Asia/Shanghai，旧项目导出口径）解析为 unix 秒（ADR-0012）；解析失败的行整行拒绝并报告

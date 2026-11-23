@@ -22,7 +22,7 @@
 - 主进程 TypeScript，渲染进程 React + TS；`strict` 模式，不使用 `any` 逃逸（确需时 `unknown` + 收窄）
 - 所有上游 HTTP 请求只发生在**主进程**（net / fetch），渲染进程零直连——上游要求特定的 `origin`/`referer`/`x-*` 头且存在 CORS 限制
 - token 读写必须经过 `TokenStore`（渲染进程不可获取令牌）；令牌**明文**存于 SQLite（ADR-0011，不再使用 safeStorage）
-- 时间处理：存储为 unix 秒；面向人的显示与解析统一按**系统时区**（显示时区，ADR-0012），禁止硬编码 Asia/Shanghai；CSV 导出时间列带显式偏移（ADR-0013 十列结构）；老格式 CSV 导入默认按 Asia/Shanghai 解释（旧项目导出口径，见术语表「时间处理规则」）
+- 时间处理：存储为 unix 秒；面向人的显示与解析统一按**系统时区**（显示时区，ADR-0012），禁止硬编码 Asia/Shanghai；CSV 为 11 列 camelCase 表头，`time` 列按系统时区无偏移仅人读，`isoTime` 列（ISO 8601 UTC，`Z` 结尾）是导入的权威时间源（ADR-0013）；老格式 CSV 导入默认按 Asia/Shanghai 解释（旧项目导出口径，见术语表「时间处理规则」）
 - `seqId` 是流水去重的唯一键（账号 × 币种内），所有写入走 upsert
 
 ## 流程约定
