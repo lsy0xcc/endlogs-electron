@@ -11,14 +11,14 @@ Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体�
 │    LoginService      浏览器登录的令牌捕获管线（请求头嗅探，ADR-0003）       │
 │    ManualTokenForm   手动 4 字段 token 表单校验 → 直接落库（ADR-0014）      │
 │  upstream/      上游 API 客户端（唯一出口，见 upstream-api.md）            │
-│    CurrencyLogClient seqId 分页拉取（遇到已获取旧数据即停，见同步进度）      │
+│    CurrencyLogClient seqId 分页拉取（最新→最旧，有效早停见 ADR-0015）       │
 │    BindingClient     binding_list 拉取                                   │
 │    ReasonTableSync   码表热更（官方 → 本地缓存 → 内置兜底，ADR-0010）      │
 │  store/         本地持久化                                                │
 │    Database          better-sqlite3（schema 见 data-model.md）            │
 │    TokenStore        令牌组读写唯一入口（明文存 SQLite，ADR-0011）          │
 │  ledger/        流水服务                                                  │
-│    SyncService       增量拉取 + upsert + 进度事件                        │
+│    SyncService       拉取（增量至 T / 全量，T 早停，ADR-0015）+ upsert + 进度事件 │
 │    ImportExport      CSV 导入导出（见 csv-format.md）                      │
 │  ipc/           IPC 契约层（handlers 注册，见下）                          │
 └──────────────────────────────────┬───────────────────────────────────────┘
@@ -45,11 +45,12 @@ Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体�
 | `auth:loginTokens` | invoke | 传入手动粘贴的 4 字段 token，校验后直接落库（ADR-0014） |
 | `auth:refreshProfile` | invoke | 用 binding_token 刷新角色资料 |
 | `accounts:list` / `switch` / `delete` | invoke | 多账号管理 |
-| `sync:run` | invoke | 拉取（日期范围 × 币种），入参出参含进度 |
-| `sync:progress` | event | 进度事件（比例 0–1 + 阶段文案） |
+| `sync:run` | invoke | 拉取（模式：同步数据（增量至 T）/ 获取全部，各 × 币种；ADR-0015），入参出参含进度 |
+| `sync:progress` | event | 进度事件（比例 0–1 + 阶段文案 + 缺口通知） |
 | `ledger:query` | invoke | 查询当前账号流水/汇总（展示层过滤 changeType） |
 | `csv:export` / `csv:import` | invoke | 导出保存对话框 / 导入解析 + 预检（条数、冲突） |
 | `reasons:status` | invoke | 码表版本与来源（诊断用） |
+| `settings:get` / `settings:set` | invoke | 读/写设置（`maxLookbackDays` 等，R7；含检测值变化时「推荐获取全部」提示的返回） |
 
 ## 错误处理
 
@@ -60,4 +61,4 @@ Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体�
 ## 进度条口径（ADR 遗留的展示细节）
 
 拉取为最新→最旧分页，取已见记录的最小 `changeTime`：
-`progress = (end_ts − min_changeTime_seen) / (end_ts − start_ts)`，首屏未知时按已拉页数粗估。
+`progress = (end_ts − min_changeTime_seen) / (end_ts − start_ts)`，`start_ts` = T（同步数据）或 `maxLookbackDays` 预测值（全量拉取），首屏未知时按已拉页数粗估。

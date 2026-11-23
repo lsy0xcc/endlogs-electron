@@ -15,8 +15,8 @@ CREATE TABLE accounts (
   server_id       TEXT,
   server_name     TEXT,
   level           INTEGER,
-  created_at      TEXT NOT NULL,
-  updated_at      TEXT NOT NULL
+  created_at     INTEGER NOT NULL,   -- unix 秒
+  updated_at     INTEGER NOT NULL
 );
 
 -- 令牌组：明文 JSON 存为 TEXT（不再 safeStorage 加密，ADR-0011），TokenStore 唯一读写方
@@ -28,7 +28,8 @@ CREATE TABLE account_tokens (
 );
 
 -- 流水库：展示口径的唯一数据源（ADR-0005）
-CREATE TABLE transactions (
+-- 表名 ledger_entries（账本条目），避免与 SQLite/Drizzle 的事务（db.transaction）混淆
+CREATE TABLE ledger_entries (
   account_id     INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   currency_type  INTEGER NOT NULL,          -- 1 源石 / 2 嵌晶玉 / 3 武库配额
   seq_id         INTEGER NOT NULL,          -- 上游游标，账号×币种内唯一
@@ -39,19 +40,22 @@ CREATE TABLE transactions (
   change_time    INTEGER NOT NULL,          -- unix 秒（绝对时刻，无时区属性；见术语表「时间处理规则」）
   PRIMARY KEY (account_id, currency_type, seq_id)
 );
-CREATE INDEX idx_tx_time ON transactions(account_id, currency_type, change_time DESC);
+-- 服务展示层日期范围过滤与 (change_time, seq_id) 排序聚合（同秒多笔时排序稳定）；
+-- seqId 打头的查询（已知性检查、upsert 冲突）由主键免费覆盖，无需冗余索引
+CREATE INDEX idx_entry_time ON ledger_entries(account_id, currency_type, change_time DESC, seq_id DESC);
 
--- 同步进度：记录已拉取覆盖到的最早时间/seqId（每账号×币种），
--- 供增量拉取判断「哪些数据已在库」（遇到已获取旧数据即停）
+-- 同步进度（ADR-0015）：每账号×币种一条，只存 T
+-- T 的不变量：[T, 现在] 内任何上游能返回的记录都已在库（死亡区缺口对其恒真）
 CREATE TABLE sync_state (
   account_id     INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   currency_type  INTEGER NOT NULL,
-  last_min_change_time INTEGER,     -- 已覆盖到的最早流水时间
-  last_seq_id    INTEGER,
-  updated_at     TEXT NOT NULL,
+  synced_until   INTEGER,     -- T：早停锚点；NULL = 从未同步（含仅 CSV 导入）
+  updated_at     INTEGER NOT NULL,   -- unix 秒（元数据时间统一 unix 秒）
   PRIMARY KEY (account_id, currency_type)
 );
 ```
+
+元数据时间列（`accounts.created_at` / `updated_at`、`sync_state.updated_at`）与 `change_time` 一律 INTEGER unix 秒——存储永远是绝对时刻，见术语表「时间处理规则」。
 
 码表不进库：userData 下的 `change_reasons.json`，结构沿用旧项目 `{version, source, reasons}`，可手改（热重载）。
 
@@ -60,14 +64,29 @@ CREATE TABLE sync_state (
 - 所有流水写入走 **upsert**（`INSERT ... ON CONFLICT(account_id, currency_type, seq_id) DO UPDATE`），重复拉取幂等
 - 导入 CSV 与在线拉取写同一张表、同一条 upsert 路径——来源不同、键相同即同一笔流水
 
-## 增量拉取（依据同步进度）
+## 拉取与同步（ADR-0015）
 
-拉取按 `seqId` 从新到旧分页：
+两个拉取入口（R3），均从最新往旧翻页、沿途一律 upsert：
 
-1. 逐页拉取（`changeType=0` 全量，见 ADR-0005）
-2. 停止条件（满足其一）：`hasNext=false`；本页全部 `seqId` 已在库（即遇到已获取过的旧数据）；`change_time < start_ts`（服务端顺序假设：最新优先）
-3. 目标起点早于拉取上限（`MAX_LOOKBACK_DAYS = 90`，见术语表与 upstream-api.md）时自动截到上限
-4. upsert 后更新同步进度（`sync_state`）
+- **同步数据**：目标 = T；T 为 NULL（从未同步，含仅导入账号）时与「获取全部历史数据」等价
+- **获取全部历史数据**：翻到 `hasNext=false` 为止——上游返回边界的事实，运行时感知，不依赖任何预存值
+
+通用规则：
+
+1. 逐页拉取（`changeType=0` 全量，见 ADR-0005），从最新往旧翻页
+2. **翻页途中经过的记录一律 upsert**（拉取「路过」的数据不丢弃）——上游分页只能从最新开始
+3. 停止条件（满足其一）：
+   - `hasNext=false`（到达上游边界；这是一切不可获取缺口的唯一出生点）
+   - **有效早停**：本页全部已知**且本页最新记录 `change_time ≤ T`**（翻页从新到旧单调下降，首个满足的页必然紧贴 T 下方；孤岛等已知数据在 T 之上不触发早停，翻页穿过即吸收）
+4. 拉取成功后：`T = 现在`
+5. **CSV 导入永不写 `sync_state`**：导入建立的已知数据是孤岛，不构成同步声明；孤岛在下次「同步数据」翻页穿过时被吸收
+6. 拉取结束时停点在旧 T 之上（`hasNext=false` 先于到达 T）：缺口 = (旧 T, 停点)，**出生即死亡**（整个位于上游边界之下）——发**非阻塞通知**「xx–xx 的记录已无法从客服中心获取」；不设选择框（「是否忽略」两选项被证明无数据差异，ADR-0015）
+
+## 最多可获取天数（纯咨询，ADR-0015）
+
+- 上游边界的**事实**由 `hasNext=false` 给出；本地设置 `maxLookbackDays`（默认 90）是预测值，**不限制任何拉取行为**，仅用于进度条分母与「推荐获取全部历史数据」提示的触发
+- 预测值可从官方游戏日志页 HTML 文案解析（2026-11-23 发现）；实现暂以 TBD 存根（异步函数恒返回 90），落地后作为设置的默认值与自动检测来源
+- 用户手动修改设置，或检测值与上次不同 → 提示「推荐获取全部历史数据」；拒绝则按增量同步继续
 
 ## 汇总计算（展示层，纯查询）
 

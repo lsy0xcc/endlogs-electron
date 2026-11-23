@@ -12,8 +12,9 @@
 2. [docs/requirements.md](docs/requirements.md) — 需求边界，别扩
 3. [docs/architecture.md](docs/architecture.md) — 模块归属：改哪层、IPC 契约
 4. [docs/data-model.md](docs/data-model.md) — schema 变更前必读
-5. [docs/upstream-api.md](docs/upstream-api.md) — 上游 API 事实（请求头、分页、枚举值），是逆向所得不是猜测，改动前先核对
-6. [docs/adr/](docs/adr/) — 已决事项。与 ADR 冲突的实现会被打回；推翻 ADR 必须先写新 ADR
+5. [docs/csv-format.md](docs/csv-format.md) — CSV 导入导出格式规范，做导入导出必读
+6. [docs/upstream-api.md](docs/upstream-api.md) — 上游 API 事实（请求头、分页、枚举值），是逆向所得不是猜测，改动前先核对
+7. [docs/adr/](docs/adr/) — 已决事项。与 ADR 冲突的实现会被打回；推翻 ADR 必须先写新 ADR
 
 ## 技术约定
 
