@@ -4,7 +4,7 @@
 
 ## 决策
 
-导出格式与旧项目 `endlogs` 完全一致（8 列、单文件单币种、`\r\n`、QUOTE_MINIMAL、文件名 `endfield_{type}_{start}_{end}.csv`），唯一变化是加 UTF-8 BOM 解决 Excel 中文乱码。导入接受带/不带 BOM 的同结构文件，按 `(account_id, currency_type, seqId)` upsert。详见 csv-format.md。
+导出格式与旧项目 `endlogs` 完全一致（8 列、单文件单币种、`\r\n`、QUOTE*MINIMAL、文件名 `endfield*{type}_{start}_{end}.csv`），唯一变化是加 UTF-8 BOM 解决 Excel 中文乱码。导入接受带/不带 BOM 的同结构文件，按 `(account_id, currency_type, seqId)` upsert。详见 csv-format.md。
 
 理由（旧格式足够好）：
 

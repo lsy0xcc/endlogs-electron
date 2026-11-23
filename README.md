@@ -19,12 +19,12 @@
 
 ## 技术栈
 
-| 层 | 选型 |
-|----|------|
-| 框架 | Electron + electron-forge（Vite + TypeScript 模板） |
-| UI | React + shadcn/ui（Radix + Tailwind CSS） |
+| 层       | 选型                                                               |
+| -------- | ------------------------------------------------------------------ |
+| 框架     | Electron + electron-forge（Vite + TypeScript 模板）                |
+| UI       | React + shadcn/ui（Radix + Tailwind CSS）                          |
 | 本地存储 | SQLite（Drizzle ORM + better-sqlite3），token 明文存储（ADR-0011） |
-| 目标平台 | Windows、macOS |
+| 目标平台 | Windows、macOS                                                     |
 
 架构决策见 [docs/adr/](docs/adr/)，术语见 [docs/glossary.md](docs/glossary.md)。
 
@@ -46,15 +46,15 @@ npm run make      # 按 forge.config.ts 中配置的 target 产出安装包
 
 ## 文档地图
 
-| 文档 | 内容 |
-|------|------|
-| [docs/requirements.md](docs/requirements.md) | 功能需求与验收要点 |
-| [docs/architecture.md](docs/architecture.md) | 进程模型、模块划分、IPC 面 |
-| [docs/data-model.md](docs/data-model.md) | SQLite schema、去重与增量拉取策略 |
-| [docs/upstream-api.md](docs/upstream-api.md) | 上游（客服中心）API 逆向笔记 |
-| [docs/csv-format.md](docs/csv-format.md) | CSV 导入导出格式规范 |
-| [docs/glossary.md](docs/glossary.md) | 领域术语表 |
-| [docs/ui.md](docs/ui.md) | 数据展示设计（待讨论，仅记录约束） |
+| 文档                                         | 内容                               |
+| -------------------------------------------- | ---------------------------------- |
+| [docs/requirements.md](docs/requirements.md) | 功能需求与验收要点                 |
+| [docs/architecture.md](docs/architecture.md) | 进程模型、模块划分、IPC 面         |
+| [docs/data-model.md](docs/data-model.md)     | SQLite schema、去重与增量拉取策略  |
+| [docs/upstream-api.md](docs/upstream-api.md) | 上游（客服中心）API 逆向笔记       |
+| [docs/csv-format.md](docs/csv-format.md)     | CSV 导入导出格式规范               |
+| [docs/glossary.md](docs/glossary.md)         | 领域术语表                         |
+| [docs/ui.md](docs/ui.md)                     | 数据展示设计（待讨论，仅记录约束） |
 
 ## License
 

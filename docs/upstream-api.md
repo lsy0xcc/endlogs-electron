@@ -32,15 +32,15 @@ Content-Type: application/json
 
 响应 `data`：`{ list: [...], hasNext: boolean }`。list 条目：
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `currencyType` | int | 1 源石 / 2 嵌晶玉 / 3 武库配额 |
-| `changeType` | int | 1 获取 / 2 消耗（作为请求参数时 0=全部） |
-| `changeReason` | int | 数字原因码，查码表 |
-| `changeNum` | int | 恒为正数 |
-| `after` | int | 变动后存量 |
-| `changeTime` | int | unix 秒（绝对时刻，无时区属性；页面显示只是前端按时区格式化） |
-| `seqId` | int | 单调游标，**翻页取上一页最后一条** |
+| 字段           | 类型 | 说明                                                          |
+| -------------- | ---- | ------------------------------------------------------------- |
+| `currencyType` | int  | 1 源石 / 2 嵌晶玉 / 3 武库配额                                |
+| `changeType`   | int  | 1 获取 / 2 消耗（作为请求参数时 0=全部）                      |
+| `changeReason` | int  | 数字原因码，查码表                                            |
+| `changeNum`    | int  | 恒为正数                                                      |
+| `after`        | int  | 变动后存量                                                    |
+| `changeTime`   | int  | unix 秒（绝对时刻，无时区属性；页面显示只是前端按时区格式化） |
+| `seqId`        | int  | 单调游标，**翻页取上一页最后一条**                            |
 
 - 列表顺序：**最新在前**
 - **无日期参数**：日期过滤只能客户端做（新架构：增量拉取按 ADR-0015 早停 + 本地流水库过滤）

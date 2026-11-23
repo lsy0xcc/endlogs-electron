@@ -13,19 +13,19 @@ time,resourceType,reason,changeType,amount,balanceAfter,isoTime,currencyCode,rea
 - 行粒度：一笔流水一行；**单文件单币种**（文件名含币种编号）
 - 列语义：
 
-| 列 | 来源 | 说明 |
-|----|------|------|
-| time | `changeTime` | `YYYY-MM-DD HH:MM:SS`，按系统时区格式化、**无偏移**（ADR-0012）；仅人读，**导入不解析** |
-| resourceType | 币种名 | 源石 / 嵌晶玉 / 武库配额 |
-| reason | 码表映射 | 未收录码为 `未知原因(N)`；导入时仅供参考 |
-| changeType | `changeTypeName` | 获取 / 消耗 |
-| amount | `signed_delta` | **带符号**：获取 `+100` / 消耗 `-50`（`changeType==2` 取负） |
-| balanceAfter | `after` | |
-| isoTime | `changeTime` | ISO 8601 UTC：`YYYY-MM-DDTHH:MM:SSZ`。**导入的权威时间源**；跨时区机器导出字面值恒定 |
-| currencyCode | `currencyType` | 数字原值（1/2/3） |
-| reasonCode | `changeReason` | 数字原值（字符串） |
-| changeTypeCode | `changeType` | 数字原值（1/2） |
-| seqId | `seqId` | 去重键 |
+| 列             | 来源             | 说明                                                                                    |
+| -------------- | ---------------- | --------------------------------------------------------------------------------------- |
+| time           | `changeTime`     | `YYYY-MM-DD HH:MM:SS`，按系统时区格式化、**无偏移**（ADR-0012）；仅人读，**导入不解析** |
+| resourceType   | 币种名           | 源石 / 嵌晶玉 / 武库配额                                                                |
+| reason         | 码表映射         | 未收录码为 `未知原因(N)`；导入时仅供参考                                                |
+| changeType     | `changeTypeName` | 获取 / 消耗                                                                             |
+| amount         | `signed_delta`   | **带符号**：获取 `+100` / 消耗 `-50`（`changeType==2` 取负）                            |
+| balanceAfter   | `after`          |                                                                                         |
+| isoTime        | `changeTime`     | ISO 8601 UTC：`YYYY-MM-DDTHH:MM:SSZ`。**导入的权威时间源**；跨时区机器导出字面值恒定    |
+| currencyCode   | `currencyType`   | 数字原值（1/2/3）                                                                       |
+| reasonCode     | `changeReason`   | 数字原值（字符串）                                                                      |
+| changeTypeCode | `changeType`     | 数字原值（1/2）                                                                         |
+| seqId          | `seqId`          | 去重键                                                                                  |
 
 - 排序：时间倒序（最新在前）
 - 分隔符 `,`，引号 `"`，QUOTE_MINIMAL（值含 `,` `"` 换行时加引号，内嵌引号翻倍），行尾 `\r\n`（papaparse `quotes`/`newline` 选项）
