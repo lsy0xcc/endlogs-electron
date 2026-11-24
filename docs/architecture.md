@@ -1,6 +1,6 @@
 # 架构
 
-Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体取消，由主进程模块替代）。
+Electron 桌面应用，无本地 HTTP 服务（原版 endlogs 的 FastAPI 层整体取消，由主进程模块替代）。
 
 ## 进程模型
 
@@ -24,7 +24,7 @@ Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体�
 └──────────────────────────────────┬───────────────────────────────────────┘
                                    │ contextBridge（白名单 API）
 ┌──────────────────────────── 渲染进程 (renderer) ─────────────────────────┐
-│  React + shadcn/ui（Base UI + Tailwind v4，ADR-0016）                        │
+│  React + shadcn/ui（Base UI + Tailwind v4，ADR-0016），日期统一 dayjs        │
 │  页面：主页（账号下拉 / 拉取 / 展示 / CSV 导出）/                              │
 │        设置页（lookback / CSV 导入导出 / 用户管理 / 码表）（见 ui.md）         │
 │  纯展示与状态，不直连上游、不落盘                                           │
@@ -37,6 +37,7 @@ Electron 桌面应用，无本地 HTTP 服务（旧项目的 FastAPI 层整体�
 2. **令牌零散落**。捕获 → `TokenStore`（明文存 SQLite，ADR-0011）→ 内存供 `upstream/` 使用；渲染进程永远拿不到令牌。
 3. **两条登录入口，一种令牌组**。浏览器登录走「弹窗 → 页面发请求 → 嗅探 `x-`\* 头」管线（ADR-0003）；手动粘贴 token 直接落库、不经浏览器（ADR-0014）。两者产出的 `SessionTokens` 同构，下游无差别。
 4. **展示只读流水库**。渲染进程查询的是本地 SQLite（经 IPC），拉取动作只是同步流水库的手段。
+5. **外链走系统浏览器**。渲染进程的 `target="_blank"` 外链由主进程 `setWindowOpenHandler` 转交系统浏览器打开（拒绝新开 Electron 窗口），避免应用内裸露浏览器上下文。
 
 ## IPC 面（主 → 渲染暴露的能力，实现时以 zod schema 固化）
 

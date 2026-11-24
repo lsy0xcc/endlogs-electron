@@ -144,3 +144,6 @@ vite.config.ts.timestamp-*
 
 # Electron-Forge
 out/
+
+# Static renderer mock data (contains real account captures — never commit)
+mock-data/

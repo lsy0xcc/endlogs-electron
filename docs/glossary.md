@@ -1,6 +1,8 @@
 # 领域术语表（Glossary）
 
-项目统一词汇。代码命名、文档、提交信息均以此为准。引用旧项目实现时标注了出处（`endlogs` 仓库）。
+项目统一词汇。代码命名、文档、提交信息均以此为准。引用原版 endlogs 实现时标注了出处（`endlogs` 仓库）。
+
+> 措辞规则：endlogs（github.com/wPtilopsis/endlogs）是**他人项目**，一切措辞统一称「原版 endlogs」/「endlogs」，不得称「旧项目」「旧版」；其导出的 8 列 CSV 统一称「原版格式」/「原版 8 列」/「原版中文八列」（2026-11-24 用户决策）。
 
 ## 上游与账号
 
@@ -48,7 +50,7 @@
 1. **存储永远是绝对时刻**：数据库与上游的 `changeTime` 均为 unix 秒，无时区属性——时区只发生在「显示给人」或「解析人的输入」时
 2. **格式化**（UI 展示、CSV 导出的 `time` 列）：一律按显示时区（系统时区）转换；转换统一走工具函数（集中一处，主/渲染各一份薄封装）。CSV 导出另含 `isoTime` 列：ISO 8601 UTC（`Z` 结尾），是导入的权威时间源（ADR-0013）
 3. **解析**（查询日期范围）：日期边界（00:00:00 / 23:59:59）按显示时区（系统时区）计算
-4. **CSV 导入**：本项目导出（camelCase 11 列）只解析 `isoTime`（UTC）为 unix 秒，`time` 列不解析（无偏移、字面值随导出机器时区而变）；老格式（无偏移，旧 Python 项目导出）按用户选择的时区、默认 Asia/Shanghai——旧项目导出即上海口径，与显示时区无关（ADR-0012）
+4. **CSV 导入**：本项目导出（camelCase 11 列）只解析 `isoTime`（UTC）为 unix 秒，`time` 列不解析（无偏移、字面值随导出机器时区而变）；原版格式（无偏移，原版 endlogs 导出）按用户选择的时区、默认 Asia/Shanghai——原版 endlogs 导出即上海口径，与显示时区无关（ADR-0012）
 
 ## 本地数据
 
@@ -62,4 +64,4 @@
 | 增量拉取         | incremental fetch  | 从最新往回翻页，**有效早停** = 本页全部已知且最新记录 ≤ T；孤岛等悬空已知数据不停，翻页穿过时吸收（见 ADR-0015）                                                                                                                      |
 | 同步进度         | sync progress      | 每账号 × 每币种一条（表 `sync_state`）：`synced_until`（T），不变量「[T, 现在] 内上游能返回的记录都已在库」。作用：早停锚点（ADR-0015）；**CSV 导入不写同步进度**                                                                     |
 | 拉取上限         | lookback limit     | 上游流水最早只能拉到约 90 天前（2026-11-23 实测），更早的数据不返回；**事实边界由 `hasNext=false` 现场感知**。本地 `maxLookbackDays`（默认 90，可从官方页面文案解析、暂为 TBD 存根）为纯咨询预测值，不限制拉取行为（见 R7、ADR-0015） |
-| 码表缓存         | reason table cache | userData 下的 `change_reasons.json`，结构与旧项目一致（`{version, source, reasons}`），可手改                                                                                                                                         |
+| 码表缓存         | reason table cache | userData 下的 `change_reasons.json`，结构与原版 endlogs 一致（`{version, source, reasons}`），可手改                                                                                                                                  |

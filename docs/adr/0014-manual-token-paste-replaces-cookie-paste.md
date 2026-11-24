@@ -7,9 +7,9 @@
 ## 背景
 
 - ADR-0003 设计了「粘贴 cookies → `session.cookies.set` 注入隐藏窗口 → 站点发请求 → 嗅探」路径，其成立前提是**上游登录态全在 cookies**，原计划以 spike 实测验证
-- 对旧项目（../endlogs，Python）的核查结论（2026-11-23）：
+- 对原版 endlogs（../endlogs，Python）的核查结论（2026-11-23）：
   - Playwright 全程**不提取、不保存 cookies**；token 一律来自请求头 `x-account-token` / `x-role-token` / `x-role-server-id` 与 `binding_list` URL 的 `?token=`
-  - 旧项目的手动备用路径（`/api/auth/manual`）就是 **4 字段裸 token 粘贴**，无任何 cookie 解析逻辑
+  - 原版 endlogs 的手动备用路径（`/api/auth/manual`）就是 **4 字段裸 token 粘贴**，无任何 cookie 解析逻辑
 - 跨域登录态（在 `customer-service.hypergryph.com` 登录后，`user.hypergryph.com` 保持登录）表明上游大概率确有 cookies 会话，但本项目不再据此构建功能
 
 ## 决策

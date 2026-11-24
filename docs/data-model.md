@@ -58,7 +58,7 @@ CREATE TABLE sync_state (
 
 元数据时间列（`accounts.created_at` / `updated_at`、`sync_state.updated_at`）与 `change_time` 一律 INTEGER unix 秒——存储永远是绝对时刻，见术语表「时间处理规则」。
 
-码表不进库：userData 下的 `change_reasons.json`，结构沿用旧项目 `{version, source, reasons}`，可手改（热重载）。
+码表不进库：userData 下的 `change_reasons.json`，结构沿用原版 endlogs `{version, source, reasons}`，可手改（热重载）。内置兜底表（ADR-0010 第 3 级）为仓库根 `change_reasons.json`（v2026-09-01，26 条，取自 endlogs 仓库），随包分发。
 
 ## 写入与去重
 
@@ -91,15 +91,15 @@ CREATE TABLE sync_state (
 
 ## 汇总计算（展示层，纯查询）
 
-沿用旧项目口径（`stats/aggregate.py`），但数据源是流水库而非单次拉取：
+沿用原版 endlogs 口径（`stats/aggregate.py`），但数据源是流水库而非单次拉取：
 
 - 按 `(change_time, seq_id)` 升序排列后：`opening = first.after − signed(first)`，`closing = last.after`
 - `signed = change_type==2 ? −|change_num| : +|change_num|`
-- 获取/消耗按 `change_type` 分桶累计；`changeType` 的获取/消耗过滤在 SQL 层做，**期初/期末不受过滤影响**（这是对旧项目缺陷的修复，见 ADR-0005）
+- 获取/消耗按 `change_type` 分桶累计；`changeType` 的获取/消耗过滤在 SQL 层做，**期初/期末不受过滤影响**（这是对原版 endlogs 缺陷的修复，见 ADR-0005）
 
 ## 已知边界情况
 
 - 同一鹰角账号换绑角色后重新登录：视为新账号实体（uid 不同则不同账号）；`account_uid` 相同可提示用户合并/替换
 - **删除账号 = 归档**（软删除）：`status='archived'`，不触发级联删除，流水与 `sync_state` 原样保留、导出可用；恢复 = `status='active'`（见 ui.md「归档语义」）
 - **重复 roleId**：添加账号时 token 解析出的 roleId 与已有账号相同 → 确认后**合并为刷新 token**（覆盖 `account_tokens`，不新建实体，流水不动）；与已归档账号相同 → 确认后**恢复 + 刷新 token**
-- CSV 导入的时间列：本项目导出（11 列 camelCase）只解析 `isoTime`（UTC，`Z` 结尾）为 unix 秒；老格式按用户选择时区（默认 Asia/Shanghai，旧项目导出口径）解析为 unix 秒（ADR-0012）；解析失败的行整行拒绝并报告
+- CSV 导入的时间列：本项目导出（11 列 camelCase）只解析 `isoTime`（UTC，`Z` 结尾）为 unix 秒；原版格式按用户选择时区（默认 Asia/Shanghai，原版 endlogs 导出口径）解析为 unix 秒（ADR-0012）；解析失败的行整行拒绝并报告
